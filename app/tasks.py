@@ -7,8 +7,9 @@ from . import models, schemas
 
 
 def get_tasks(db: Session, list_id: int, skip: int = 0, limit: int = 20):
-    tasks = db.query(models.Task).filter(models.Task.list_id ==
-                                         list_id).offset(skip).limit(limit).all()
+    tasks = db.query(models.Task).filter(
+        models.Task.list_id == list_id
+    ).offset(skip).limit(limit).all()
     print(tasks)
     return tasks
 
@@ -34,8 +35,10 @@ def get_task(db: Session, task_id: int):
 
 
 def delete_task(db: Session, list_id: int, task_id: int):
-    task = db.query(models.Task).filter(models.List.id ==
-                                        list_id, models.Task.id == task_id).first()
+    task = db.query(models.Task).filter(
+        models.List.id == list_id,
+        models.Task.id == task_id
+    ).first()
     db.delete(task)
     db.commit()
     return task
