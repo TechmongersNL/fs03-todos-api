@@ -1,9 +1,16 @@
 from typing import List
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from dotenv import load_dotenv
 
 from app import lists, models, database, schemas, tasks
+from users.crud import create_user, process_login
+from users.deps import get_current_user
+from users.schemas import UserBase, UserCreate, UserCredentials, Token
+
+load_dotenv()  # take environment variables from .env.
 
 # from app.database import SessionLocal, engine
 
@@ -30,6 +37,35 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+# sign up users
+
+
+@app.post("/users", response_model=UserBase)
+def sign_up_user(user: UserCreate, db: Session = Depends(get_db)):
+    return create_user(db, user=user)
+
+# log in users
+
+
+@app.post("/users/login", response_model=Token)
+def login_user(user: UserCredentials, db: Session = Depends(get_db)):
+    return process_login(db, user=user)
+
+
+@app.post("/docslogin", response_model=Token)
+def login_with_form_data(
+    user: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    return process_login(db, user=user)
+
+
+@app.get("/users/profile", response_model=UserBase)
+def get_user_profile(user: UserBase = Depends(get_current_user)):
+    return user
+
 
 # get all lists
 
@@ -70,7 +106,12 @@ def delete_lists(list_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/lists/{list_id}/tasks", response_model=List[schemas.Task])
-def read_list_tasks(list_id: int, skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
+def read_list_tasks(
+    list_id: int,
+    skip: int = 0,
+    limit: int = 20,
+    db: Session = Depends(get_db)
+):
     results = tasks.get_tasks(db, list_id=list_id, skip=skip, limit=limit)
     if results is None:
         raise HTTPException(status_code=404, detail="No tasks found")
@@ -80,12 +121,20 @@ def read_list_tasks(list_id: int, skip: int = 0, limit: int = 20, db: Session = 
 
 
 @app.post("/lists/{list_id}/tasks", response_model=schemas.Task)
-def create_list_task(list_id: int, task: schemas.TaskCreate, db: Session = Depends(get_db)):
+def create_list_task(
+    list_id: int,
+    task: schemas.TaskCreate,
+    db: Session = Depends(get_db)
+):
     return tasks.create_task(db, list_id=list_id, task=task)
 
 # delete task
 
 
 @app.delete("/lists/{list_id}/tasks", response_model=schemas.List)
-def delete_list_task(list_id: int, task_id: int, db: Session = Depends(get_db)):
+def delete_list_task(
+    list_id: int,
+    task_id: int,
+    db: Session = Depends(get_db)
+):
     return tasks.delete_task(db, list_id=list_id, task_id=task_id)
