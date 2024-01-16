@@ -1,5 +1,6 @@
+from app.models import Base
 from sqlalchemy import Boolean, Column, Integer, String
-from app.database import Base
+from sqlalchemy.orm import relationship
 
 
 class User(Base):
@@ -10,3 +11,5 @@ class User(Base):
     password = Column(String, nullable=False)
 
     disabled = Column(Boolean, default=False)
+
+    lists = relationship("List", back_populates="owner")

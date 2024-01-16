@@ -6,10 +6,11 @@ from . import models, schemas
 # get tasks for a specific list
 
 
-def get_tasks(db: Session, list_id: int, skip: int = 0, limit: int = 20):
-    tasks = db.query(models.Task).filter(
+def get_tasks(db: Session, list_id: int, user_id: int,
+              skip: int = 0, limit: int = 20):
+    tasks = db.query(models.Task).join(models.Task.list).filter(
         models.Task.list_id == list_id
-    ).offset(skip).limit(limit).all()
+    ).filter(models.List.owner_id == user_id).offset(skip).limit(limit).all()
     print(tasks)
     return tasks
 
@@ -17,7 +18,7 @@ def get_tasks(db: Session, list_id: int, skip: int = 0, limit: int = 20):
 
 
 def create_task(db: Session, list_id: int, task: schemas.TaskCreate):
-    db_task = models.Task(**task.dict(), list_id=list_id)
+    db_task = models.Task(**task.model_dump(), list_id=list_id)
     db.add(db_task)
     db.commit()
     db.refresh(db_task)

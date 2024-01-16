@@ -6,16 +6,17 @@ from . import models, schemas
 # get lists
 
 
-def get_lists(db: Session, skip: int = 0, limit: int = 20):
-    lists = db.query(models.List).offset(skip).limit(limit).all()
+def get_lists(db: Session, user_id: int, skip: int = 0, limit: int = 20):
+    lists = db.query(models.List).filter(
+        models.List.owner_id == user_id).offset(skip).limit(limit).all()
     print(lists)
     return lists
 
 # create list
 
 
-def create_list(db: Session, list: schemas.ListCreate):
-    db_list = models.List(**list.dict())
+def create_list(db: Session, user_id: int, list: schemas.ListCreate):
+    db_list = models.List(**list.model_dump(), owner_id=user_id)
     db.add(db_list)
     db.commit()
     db.refresh(db_list)
@@ -24,8 +25,9 @@ def create_list(db: Session, list: schemas.ListCreate):
 # delete list
 
 
-def delete_list(db: Session, list_id: int):
-    list = db.query(models.List).filter(models.List.id == list_id).first()
+def delete_list(db: Session, user_id: int, list_id: int):
+    list = db.query(models.List).filter(models.List.id == list_id).filter(
+        models.List.owner_id == user_id).first()
     db.delete(list)
     db.commit()
     return list
@@ -33,15 +35,17 @@ def delete_list(db: Session, list_id: int):
 # get one list
 
 
-def get_list(db: Session, list_id: int):
-    list = db.query(models.List).filter(models.List.id == list_id).first()
+def get_list(db: Session, user_id: int, list_id: int):
+    list = db.query(models.List).filter(models.List.id == list_id).filter(
+        models.List.owner_id == user_id).first()
     print(list)
     return list
 
 # get list by name
 
 
-def get_list_by_name(db: Session, name: str):
-    list = db.query(models.List).filter(models.List.name == name).first()
+def get_list_by_name(db: Session, user_id: int, name: str):
+    list = db.query(models.List).filter(models.List.name == name).filter(
+        models.List.owner_id == user_id).first()
     print(list)
     return list

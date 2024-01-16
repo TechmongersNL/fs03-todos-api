@@ -71,8 +71,11 @@ def get_user_profile(user: UserBase = Depends(get_current_user)):
 
 
 @app.get("/lists", response_model=List[schemas.List])
-def read_lists(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
-    results = lists.get_lists(db, skip=skip, limit=limit)
+def read_lists(
+        skip: int = 0, limit: int = 20,
+        user: UserBase = Depends(get_current_user),
+        db: Session = Depends(get_db)):
+    results = lists.get_lists(db, user_id=user.id, skip=skip, limit=limit)
     if results is None:
         raise HTTPException(status_code=404, detail="No lists found")
     return results
@@ -81,8 +84,9 @@ def read_lists(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
 
 
 @app.get("/lists/{list_id}", response_model=schemas.ListBase)
-def read_list(list_id: int, db: Session = Depends(get_db)):
-    results = lists.get_list(db, list_id=list_id)
+def read_list(list_id: int, db: Session = Depends(get_db),
+              user: UserBase = Depends(get_current_user)):
+    results = lists.get_list(db, user_id=user.id, list_id=list_id)
     if results is None:
         raise HTTPException(status_code=404, detail="List not found")
     return results
@@ -91,15 +95,22 @@ def read_list(list_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/lists", response_model=schemas.List)
-def create_list(list: schemas.ListCreate, db: Session = Depends(get_db)):
-    return lists.create_list(db, list=list)
+def create_list(
+    list: schemas.ListCreate,
+    user: UserBase = Depends(get_current_user),   # get user from token
+    db: Session = Depends(get_db)
+):
+    # create the list and pass in the user_id
+    return lists.create_list(db, user_id=user.id, list=list)
 
 # delete list
 
 
 @app.delete("/lists", response_model=schemas.List)
-def delete_lists(list_id: int, db: Session = Depends(get_db)):
-    return lists.delete_list(db, list_id=list_id)
+def delete_lists(list_id: int,
+                 user: UserBase = Depends(get_current_user),
+                 db: Session = Depends(get_db)):
+    return lists.delete_list(db, user_id=user.id, list_id=list_id)
 
 
 # get tasks from a list
@@ -108,11 +119,13 @@ def delete_lists(list_id: int, db: Session = Depends(get_db)):
 @app.get("/lists/{list_id}/tasks", response_model=List[schemas.Task])
 def read_list_tasks(
     list_id: int,
+    user: UserBase = Depends(get_current_user),
     skip: int = 0,
     limit: int = 20,
     db: Session = Depends(get_db)
 ):
-    results = tasks.get_tasks(db, list_id=list_id, skip=skip, limit=limit)
+    results = tasks.get_tasks(
+        db, user_id=user.id, list_id=list_id, skip=skip, limit=limit)
     if results is None:
         raise HTTPException(status_code=404, detail="No tasks found")
     return results
@@ -124,9 +137,15 @@ def read_list_tasks(
 def create_list_task(
     list_id: int,
     task: schemas.TaskCreate,
+    user: UserBase = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    return tasks.create_task(db, list_id=list_id, task=task)
+    list = lists.get_list(db, user_id=user.id, list_id=list_id)
+
+    if list is None:
+        raise HTTPException(status_code=404, detail="List not found")
+    else:
+        return tasks.create_task(db, list_id=list_id, task=task)
 
 # delete task
 
@@ -135,6 +154,7 @@ def create_list_task(
 def delete_list_task(
     list_id: int,
     task_id: int,
+    user: UserBase = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    return tasks.delete_task(db, list_id=list_id, task_id=task_id)
+    return tasks.delete_task(db, user_id=user.id, list_id=list_id, task_id=task_id)

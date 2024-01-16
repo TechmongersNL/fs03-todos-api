@@ -9,7 +9,10 @@ class List(Base):
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     name = Column(String, nullable=False)
 
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
     tasks = relationship("Task", back_populates="list")
+    owner = relationship("User", back_populates="lists")
 
 
 class Task(Base):

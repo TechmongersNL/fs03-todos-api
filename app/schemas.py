@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from users.schemas import User
 
 # task stuff
 
@@ -29,11 +30,11 @@ class ListBase(BaseModel):
 
 class ListCreate(BaseModel):
     name: str
-    user_id: int
 
 
 class List(ListBase):
     tasks: list[Task] = []
+    owner: User
 
     class Config:
         from_attributes = True
