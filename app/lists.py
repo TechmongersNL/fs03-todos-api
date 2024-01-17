@@ -1,5 +1,6 @@
 # app/lists.py
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from . import models, schemas
 
@@ -8,8 +9,8 @@ from . import models, schemas
 
 def get_lists(db: Session, user_id: int, skip: int = 0, limit: int = 20):
     lists = db.query(models.List).filter(
-        models.List.owner_id == user_id).offset(skip).limit(limit).all()
-    print(lists)
+        models.List.owner_id == user_id
+    ).offset(skip).limit(limit).all()
     return lists
 
 # create list
@@ -27,7 +28,12 @@ def create_list(db: Session, user_id: int, list: schemas.ListCreate):
 
 def delete_list(db: Session, user_id: int, list_id: int):
     list = db.query(models.List).filter(models.List.id == list_id).filter(
-        models.List.owner_id == user_id).first()
+        models.List.owner_id == user_id
+    ).first()
+
+    if list is None:
+        raise HTTPException(status_code=404, detail="List not found")
+
     db.delete(list)
     db.commit()
     return list
@@ -36,9 +42,11 @@ def delete_list(db: Session, user_id: int, list_id: int):
 
 
 def get_list(db: Session, user_id: int, list_id: int):
-    list = db.query(models.List).filter(models.List.id == list_id).filter(
-        models.List.owner_id == user_id).first()
-    print(list)
+    list = db.query(models.List).filter(
+        models.List.id == list_id
+    ).filter(
+        models.List.owner_id == user_id
+    ).first()
     return list
 
 # get list by name
@@ -47,5 +55,4 @@ def get_list(db: Session, user_id: int, list_id: int):
 def get_list_by_name(db: Session, user_id: int, name: str):
     list = db.query(models.List).filter(models.List.name == name).filter(
         models.List.owner_id == user_id).first()
-    print(list)
     return list
